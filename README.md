@@ -45,7 +45,9 @@ look at.
 
 ## Running it
 
-The image is published to the GitHub Container Registry:
+The image is published to the GitHub Container Registry for `linux/amd64` and
+`linux/arm64`, under one manifest — `docker pull` gets the right binary without
+being told which:
 
 ```
 ghcr.io/k15g/compose-monitor:latest   # the most recent release

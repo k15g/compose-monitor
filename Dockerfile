@@ -4,7 +4,13 @@
 # mounts below available regardless of how old the local Docker is.
 
 # Build ------------------------------------------------------------------
-FROM golang:1.26-alpine AS build
+#
+# Pinned to the machine doing the building rather than the machine being built
+# for, so the compiler always runs natively. Go cross-compiles, and with cgo off
+# there is nothing to link against — building arm64 on an amd64 runner costs no
+# more than building amd64, where emulating the whole toolchain under QEMU would
+# cost several minutes a build.
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
 
 WORKDIR /src
 
@@ -32,11 +38,25 @@ COPY . .
 #
 # Both are per-builder and not part of the image. A fresh CI runner starts cold
 # unless the workflow wires up a cache backend of its own.
+#
+# TARGETOS and TARGETARCH are supplied by the builder, one value per platform
+# being built. They are what make the cross-compile a cross-compile: without
+# them this stage, pinned to the build machine, would put that machine's binary
+# into every image — an arm64 image carrying an amd64 executable, which fails
+# only when something tries to run it.
+ARG TARGETOS
+ARG TARGETARCH
+
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/compose-monitor ./cmd/server
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath -ldflags="-s -w" -o /out/compose-monitor ./cmd/server
 
 # Run --------------------------------------------------------------------
+#
+# No --platform here: this stage is the image being built, so it is pulled for
+# the target architecture. Nothing runs in it — only a COPY — so no emulation is
+# needed to assemble it either.
 FROM gcr.io/distroless/static-debian12:nonroot
 
 # Annotations on the final stage, so they survive onto the image that ships.

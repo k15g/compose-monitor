@@ -95,6 +95,12 @@ jobs:
       - name: Work out the tags
         id: meta
         uses: docker/metadata-action@v6
+        env:
+          # Annotate the index as well as the manifests under it. The registry
+          # page reads its description from the index — the labels below sit in
+          # each image's config, which is where a running container looks and
+          # not where the registry does.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -113,9 +119,13 @@ jobs:
         with:
           context: .
           push: true
+          # One manifest covering both, so `docker pull` on either gets the
+          # right binary without asking for it.
+          platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
