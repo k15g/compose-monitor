@@ -1,0 +1,111 @@
+package templates
+
+import (
+	"github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// Detail is everything known about one network.
+//
+// The same three regions as a service: a header saying what this is and what
+// can be done with it, a sidebar of the facts that identify it, and a main
+// column for everything that varies in size — the addressing, what is on it,
+// and its options and labels.
+templ Detail(project string, network domain.Network, controllable bool) {
+	@shared.Layout(project+" — "+network.Name, "networks", project) {
+		<main class="detail">
+			<header class="detail-header">
+				<div class="identity">
+					@shared.Breadcrumbs(shared.Trail(project, "Networks", "/networks", network.Name))
+					<h1>{ network.Name }</h1>
+					<p class="badges">
+						@shared.Badge("badge-container", icons.Network, network.ShortID(), network.ID)
+						@shared.Badge("badge-driver", icons.Gear, network.Driver, "Network driver")
+						@shared.Badge(shared.UsageClass(network.UsedBy), icons.Container, shared.UsageLabel(network.UsedBy), "Containers attached to this network")
+					</p>
+				</div>
+				if controllable && !network.InUse() {
+					<div class="actions">
+						@shared.RemoveLink("/networks/" + network.ID + "/remove")
+					</div>
+				}
+			</header>
+			<div class="detail-body">
+				<div class="detail-main">
+					<section class="panel">
+						<h2>Addressing</h2>
+						if len(network.Subnets) == 0 {
+							<p class="muted">This network has no subnet configured.</p>
+						} else {
+							<table class="pairs">
+								<tbody>
+									for _, subnet := range network.Subnets {
+										<tr>
+											<th scope="row"><code>{ subnet.Range }</code></th>
+											<td><code>{ shared.Or(subnet.Gateway) }</code> <span class="muted">gateway</span></td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						}
+					</section>
+					<section class="panel">
+						<h2>Connected containers</h2>
+						if len(network.Members) == 0 {
+							<p class="muted">
+								Nothing is on this network. A network outlives the containers that
+								joined it, so an empty one usually means the project is stopped.
+							</p>
+						} else {
+							<table class="pairs">
+								<tbody>
+									for _, member := range network.Members {
+										<tr>
+											<th scope="row">
+												<a href={ templ.SafeURL("/services/" + member.ContainerID) }>{ member.Name }</a>
+											</th>
+											<td>
+												<code>{ shared.Or(member.IPv4Address) }</code>
+												if member.IPv6Address != "" {
+													<code>{ member.IPv6Address }</code>
+												}
+											</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						}
+					</section>
+					// Pairs draws nothing when there is nothing to draw: a panel
+					// whose only content is a sentence saying it is empty is a
+					// panel to read and learn nothing from.
+					@shared.Pairs("Options", network.Options)
+					// The same families as a service, folded the same way. The
+					// generic group appears only when something is in it, so a
+					// resource carrying nothing but Compose's own labels shows
+					// one fold rather than two.
+					for _, group := range domain.GroupLabels(network.Labels) {
+						@shared.Folded(group.Title+" labels", shared.FormatInt(len(group.Labels))) {
+							@shared.PairsTable(group.Labels)
+						}
+					}
+				</div>
+				<aside class="sidebar">
+					@shared.Properties("Network") {
+						@shared.CodeProperty("ID", network.ID)
+						@shared.Property("Driver", network.Driver)
+						@shared.Property("Scope", shared.Or(network.Scope))
+						@shared.Property("Created", shared.FormatTime(network.Created))
+						@shared.Property("Internal", shared.FormatBool(network.Internal))
+						@shared.Property("Attachable", shared.FormatBool(network.Attachable))
+						@shared.Property("IPv6", shared.FormatBool(network.IPv6))
+						// No "in use" count here: the containers themselves are
+						// listed in the main column, and a number saying how many
+						// of them there are is a worse version of that list.
+					}
+				</aside>
+			</div>
+		</main>
+	}
+}

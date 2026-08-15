@@ -1,0 +1,87 @@
+package templates
+
+import "github.com/k15g/compose-monitor/internal/domain"
+
+// Property is one row of a properties block: a name and its value.
+templ Property(name string, value string) {
+	<div class="property">
+		<dt>{ name }</dt>
+		<dd>{ value }</dd>
+	</div>
+}
+
+// CodeProperty is Property for a value that is a path, an image reference or a
+// command — things that are easier to read, and to copy, in a monospace face.
+templ CodeProperty(name string, value string) {
+	<div class="property">
+		<dt>{ name }</dt>
+		<dd><code>{ value }</code></dd>
+	</div>
+}
+
+// Properties wraps a set of Property rows.
+templ Properties(heading string) {
+	<section class="panel">
+		<h2>{ heading }</h2>
+		<dl class="properties">
+			{ children... }
+		</dl>
+	</section>
+}
+
+// Pairs renders a set of key/value pairs — labels, options, environment — as a
+// table, and renders nothing at all when there are none.
+//
+// A volume with no labels says that by having none; a panel saying "this volume
+// has no labels" is a heading, a box and a sentence spent on the absence of
+// something, on a page read at a glance. The mounts panel and the label folds on
+// the service page drop themselves the same way.
+templ Pairs(heading string, pairs []domain.Label) {
+	if len(pairs) > 0 {
+		<section class="panel">
+			<h2>{ heading }</h2>
+			<table class="pairs">
+				<tbody>
+					for _, pair := range pairs {
+						<tr>
+							<th scope="row"><code>{ pair.Key }</code></th>
+							<td><code>{ pair.Value }</code></td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</section>
+	}
+}
+
+// Folded is a panel that starts closed. Used for the long lists — a container
+// carries a dozen compose labels it did not ask for, and unfolding them by
+// default buries everything worth reading under them.
+templ Folded(heading string, count string) {
+	<details class="panel folded">
+		<summary>
+			<span class="fold-title">{ heading }</span>
+			if count != "" {
+				<span class="fold-count">{ count }</span>
+			}
+		</summary>
+		<div class="fold-body">
+			{ children... }
+		</div>
+	</details>
+}
+
+// PairsTable is the key/value table without a panel around it, for use inside
+// a folded panel that has already drawn its own heading.
+templ PairsTable(pairs []domain.Label) {
+	<table class="pairs">
+		<tbody>
+			for _, pair := range pairs {
+				<tr>
+					<th scope="row"><code>{ pair.Key }</code></th>
+					<td><code>{ pair.Value }</code></td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}

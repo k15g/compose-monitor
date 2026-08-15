@@ -1,0 +1,102 @@
+package templates
+
+// Layout is the page shell.
+//
+// The project's name is a global header rather than each page's own heading:
+// it is the one thing true of every page, and repeating it as an <h1> left no
+// room for the page to say what it actually is.
+//
+// `active` names the current section so its tab is marked. It is a string
+// rather than a constant because the sections are a property of the routing,
+// not of this package.
+templ Layout(title string, active string, project string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			// robots.txt only asks a crawler not to fetch these pages; it does
+			// not stop one that already has a link to a page from listing it.
+			// This says the page itself must not be indexed or followed.
+			<meta name="robots" content="noindex, nofollow"/>
+			<title>{ title }</title>
+			<link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+		</head>
+		<body>
+			<header class="global">
+				<div class="global-inner">
+					<a class="brand" href="/">
+						// The same mark as the tab icon. Decorative: the name is
+						// right beside it, so a reader hearing the page read out
+						// gains nothing from it being described.
+						<img class="logo" src="/static/favicon.svg" alt="" width="20" height="20"/>
+						{ project }
+					</a>
+					// Whether this page is still receiving updates, as a dot —
+					// the words are in the tooltip and, for a reader that has no
+					// hover, in text only a screen reader sees.
+					<span class="status-dot" id="connection" data-state="connecting" title="Connecting to the update stream">
+						<span class="dot"></span>
+						<span class="visually-hidden">connecting</span>
+					</span>
+					<nav class="tabs" aria-label="Sections">
+						<a href="/" class={ "tab", templ.KV("active", active == "overview") }>Overview</a>
+						<a href="/services" class={ "tab", templ.KV("active", active == "services") }>Services</a>
+						<a href="/networks" class={ "tab", templ.KV("active", active == "networks") }>Networks</a>
+						<a href="/volumes" class={ "tab", templ.KV("active", active == "volumes") }>Volumes</a>
+					</nav>
+				</div>
+			</header>
+			{ children... }
+			// One dialog for the whole page. Confirmations are fetched into it
+			// by htmx, so what it asks always comes from the server rather than
+			// from a string the client was holding.
+			<dialog id="confirm-dialog">
+				<div id="confirm-body"></div>
+			</dialog>
+			<script src="/static/js/htmx.min.js" defer></script>
+			<script src="/static/js/app.js" defer></script>
+		</body>
+	</html>
+}
+
+// PageHeading is what a page calls itself, under the global header.
+templ PageHeading(heading string, subtitle string) {
+	@PageHeadingIn(nil, heading, subtitle)
+}
+
+// PageHeadingIn is PageHeading with a trail above it, for the pages that sit
+// somewhere rather than at the root.
+templ PageHeadingIn(crumbs []Crumb, heading string, subtitle string) {
+	<div class="titles">
+		if len(crumbs) > 0 {
+			@Breadcrumbs(crumbs)
+		}
+		<h1>{ heading }</h1>
+		if subtitle != "" {
+			<p class="subtitle">{ subtitle }</p>
+		}
+	</div>
+}
+
+// Breadcrumbs is the trail into a detail page.
+//
+// It replaces a single "back" link, which only ever said where one step up
+// was — a trail says where the page sits, and on the deeper pages there is
+// more than one step to go up.
+templ Breadcrumbs(crumbs []Crumb) {
+	<nav class="breadcrumbs" aria-label="Breadcrumb">
+		<ol>
+			for _, crumb := range crumbs {
+				<li>
+					if crumb.Href != "" {
+						<a href={ templ.SafeURL(crumb.Href) }>{ crumb.Label }</a>
+					} else {
+						<span aria-current="page">{ crumb.Label }</span>
+					}
+				</li>
+			}
+		</ol>
+	</nav>
+}

@@ -1,0 +1,5 @@
+# Build output
+/bin/
+
+# Local configuration; .env.example is committed, .env is not.
+.env

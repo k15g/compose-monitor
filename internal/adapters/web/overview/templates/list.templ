@@ -1,0 +1,70 @@
+package templates
+
+import (
+	"strconv"
+
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// Overview is the front page: what is running, right now.
+//
+// Only running services are shown — the whole list, and the networks and
+// volumes, are each a tab away. The totals above still count everything, so a
+// service that has stopped is not hidden so much as moved: it leaves the table
+// and appears in the offline count.
+templ Overview(
+	project string,
+	services []domain.Service,
+	summary domain.Summary,
+	controllable bool,
+) {
+	@shared.Layout(project+" — overview", "overview", project) {
+		<main>
+			<header class="page-header">
+				@shared.PageHeading("Overview", "")
+				<div class="totals">
+					<div class="total total-online">
+						<span class="count" id="count-online">{ strconv.Itoa(summary.Online) }</span>
+						<span class="label">online</span>
+					</div>
+					<div class="total total-offline">
+						<span class="count" id="count-offline">{ strconv.Itoa(summary.Offline) }</span>
+						<span class="label">offline</span>
+					</div>
+				</div>
+			</header>
+			@RunningListing(services, controllable)
+		</main>
+	}
+}
+
+// RunningListing is the front page's services: a line each, and only the ones
+// that are up.
+//
+// The rows that are not running are rendered and hidden rather than left out.
+// That is what keeps the rest honest: the totals are counted from the rows, and
+// a service that stops while the page is open leaves the listing and lands in
+// the offline count without the page having to be reloaded.
+templ RunningListing(services []domain.Service, controllable bool) {
+	<ul class="listing running-only" id="service-rows">
+		for _, service := range services {
+			@shared.ServiceItem(service, controllable, false)
+		}
+	</ul>
+	<p class="empty" id="empty" hidden?={ hasRunning(services) }>
+		Nothing is running. Stopped services are on the
+		<a href="/services">Services</a> page.
+	</p>
+}
+
+// hasRunning reports whether anything is up, which is what decides whether the
+// running-only table has a row to show.
+func hasRunning(services []domain.Service) bool {
+	for _, service := range services {
+		if service.Online() {
+			return true
+		}
+	}
+	return false
+}

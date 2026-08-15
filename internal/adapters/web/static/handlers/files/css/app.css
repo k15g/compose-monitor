@@ -1,0 +1,1123 @@
+/* Palette. Defined light-first on :root, with the dark values redefined under
+   prefers-color-scheme, so a viewer with no preference set still gets a
+   complete palette rather than half of one.
+
+   Dark mode is these token values and nothing else: no colour is written
+   outside this block, so every rule below follows the theme without knowing
+   there is one. That is also the constraint to keep — a literal colour in a
+   rule is a rule that is wrong in one of the two themes.
+
+   Both palettes clear WCAG AA against the surfaces they are used on: 4.5:1 for
+   text, 3:1 for the badges. The two light values with the least room are
+   --muted and --accent, so check them first if you change the backgrounds. */
+:root {
+	color-scheme: light dark;
+
+	--bg: #f6f7f9;
+	--surface: #ffffff;
+	--border: #e2e5ea;
+	--text: #1c2024;
+	--muted: #5d646f;
+	--accent: #2a63d6;
+
+	--online: #1a7f4b;
+	--online-bg: #e6f4ec;
+	--offline: #9a3412;
+	--offline-bg: #fdf0e8;
+	--neutral: #4b5563;
+	--neutral-bg: #eef0f3;
+	--danger: #b42318;
+	--danger-bg: #fdeceb;
+
+	--radius: 8px;
+	--mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #14171a;
+		--surface: #1c2024;
+		--border: #2b3138;
+		--text: #e7eaee;
+		--muted: #949ba6;
+		--accent: #6da2ff;
+
+		--online: #52c48b;
+		--online-bg: #16301f;
+		--offline: #f0a06a;
+		--offline-bg: #33200f;
+		--neutral: #a0a8b4;
+		--neutral-bg: #23282e;
+		--danger: #f28b82;
+		--danger-bg: #331b19;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 2rem 1.5rem;
+	background: var(--bg);
+	color: var(--text);
+	font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main {
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+/* Global header ----------------------------------------------------------- */
+
+.global {
+	margin: -2rem -1.5rem 1.5rem;
+	padding: 0 1.5rem;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.global-inner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0 1.5rem;
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+/* The project's name, and the way back to the overview. */
+.brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.9rem 0 0.9rem;
+	color: var(--text);
+	font-size: 1.0625rem;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	text-decoration: none;
+}
+
+.brand:hover {
+	color: var(--accent);
+}
+
+.logo {
+	display: block;
+	width: 1.25rem;
+	height: 1.25rem;
+}
+
+.tabs {
+	display: flex;
+	gap: 0.25rem;
+	margin-left: auto;
+}
+
+.tab {
+	padding: 0.9rem;
+	border-bottom: 2px solid transparent;
+	color: var(--muted);
+	font-size: 0.9375rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.tab:hover {
+	color: var(--text);
+}
+
+.tab.active {
+	border-bottom-color: var(--accent);
+	color: var(--accent);
+}
+
+/* Sections on the overview ------------------------------------------------ */
+
+.section + .section {
+	margin-top: 2rem;
+}
+
+.section-heading {
+	margin: 0 0 0.6rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--muted);
+}
+
+/* Detail pages ------------------------------------------------------------ */
+
+.detail-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.identity {
+	flex: 1 1 20rem;
+	min-width: 0;
+}
+
+/* The name inside the project, above the title — which may come from the
+   image and say something else entirely. */
+.internal-name {
+	margin: 0.35rem 0 0;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.internal-name code {
+	color: var(--text);
+	font-weight: 600;
+}
+
+.identity h1 {
+	margin: 0.1rem 0 0;
+}
+
+.description {
+	max-width: 60ch;
+	margin: 0.3rem 0 0;
+	color: var(--muted);
+}
+
+.badges {
+	margin: 0.5rem 0 0;
+}
+
+/* Sidebar and main -------------------------------------------------------- */
+
+.detail-body {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 21rem);
+	gap: 1rem;
+	align-items: start;
+}
+
+.sidebar,
+.detail-main {
+	display: grid;
+	gap: 1rem;
+	min-width: 0;
+}
+
+@media (max-width: 62rem) {
+	.detail-body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.breadcrumbs {
+	margin-bottom: 0.35rem;
+	font-size: 0.8125rem;
+}
+
+.breadcrumbs ol {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.breadcrumbs a {
+	color: var(--muted);
+	text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+/* The separator is drawn rather than written, so it is not read out as a word
+   between every step of the trail. */
+.breadcrumbs li + li::before {
+	content: "/";
+	margin-right: 0.35rem;
+	color: var(--border);
+}
+
+.breadcrumbs [aria-current="page"] {
+	color: var(--text);
+	font-weight: 600;
+}
+
+/* Pages with no sidebar — network and volume detail — lay their panels out in
+   a plain responsive grid. */
+.panels {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: 1rem;
+	align-items: start;
+}
+
+.panel {
+	padding: 1.1rem 1.25rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	/* A panel of many labels must not stretch the grid column it sits in. */
+	min-width: 0;
+	overflow-x: auto;
+}
+
+.panel h2 {
+	margin: 0 0 0.85rem;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.properties {
+	margin: 0;
+}
+
+.property {
+	padding: 0.5rem 0;
+}
+
+.property + .property {
+	border-top: 1px solid var(--border);
+}
+
+.property dt {
+	margin-bottom: 0.1rem;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.property dd {
+	margin: 0;
+	line-height: 1.45;
+	word-break: break-word;
+}
+
+/* Wide enough for two columns — the panels outside a sidebar — puts the label
+   beside its value again, where there is room for both. */
+@media (min-width: 62rem) {
+	.panels .property {
+		display: grid;
+		grid-template-columns: 11rem 1fr;
+		gap: 0.75rem;
+		align-items: baseline;
+	}
+
+	.panels .property dt {
+		margin-bottom: 0;
+	}
+}
+
+table.pairs {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table.pairs th {
+	width: 40%;
+	padding: 0.45rem 0.9rem 0.45rem 0;
+	color: var(--text);
+	font-size: 0.875rem;
+	font-weight: 600;
+	line-height: 1.4;
+	text-align: left;
+	text-transform: none;
+	letter-spacing: normal;
+	vertical-align: top;
+	/* Keys wrap. `com.docker.compose.project.config_files` on one line made the
+	   table wider than its panel, and the panel scrolls sideways — which is a
+	   worse way to read a label than a key on two lines. */
+	word-break: break-word;
+}
+
+table.pairs td {
+	padding: 0.45rem 0;
+	border: none;
+	font-size: 0.875rem;
+	line-height: 1.4;
+	vertical-align: top;
+	word-break: break-word;
+}
+
+table.pairs tr + tr th,
+table.pairs tr + tr td {
+	border-top: 1px solid var(--border);
+}
+
+ul.plain {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+ul.plain li + li {
+	margin-top: 0.35rem;
+}
+
+.alias,
+.subnet {
+	display: inline-block;
+	margin-left: 0.3rem;
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.75rem;
+}
+
+.footnote {
+	margin: 1rem 0 0;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+a {
+	color: var(--accent);
+}
+
+/* Header ------------------------------------------------------------------ */
+
+.page-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.titles {
+	flex: 1 1 16rem;
+}
+
+h1 {
+	margin: 0;
+	font-size: 1.5rem;
+	letter-spacing: -0.01em;
+}
+
+.subtitle {
+	margin: 0.2rem 0 0;
+	color: var(--muted);
+	font-size: 0.875rem;
+}
+
+.totals {
+	display: flex;
+	gap: 0.5rem;
+}
+
+/* Two tiles rather than three, so they no longer need to be small. */
+.total {
+	min-width: 5rem;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	text-align: center;
+}
+
+.total .count {
+	display: block;
+	font-size: 1.35rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.total .label {
+	color: var(--muted);
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.total-online .count {
+	color: var(--online);
+}
+
+.total-offline .count {
+	color: var(--offline);
+}
+
+/* Connection indicator ----------------------------------------------------
+   A dot beside the project's name. What it means is in the tooltip, and in
+   text for a reader that cannot hover over it. */
+
+.status-dot {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 0.55rem;
+	cursor: help;
+}
+
+.status-dot .dot {
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 50%;
+	background: var(--muted);
+}
+
+.status-dot[data-state="live"] .dot {
+	background: var(--online);
+}
+
+.status-dot[data-state="down"] .dot {
+	background: var(--danger);
+	animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	50% {
+		opacity: 0.25;
+	}
+}
+
+/* Table ------------------------------------------------------------------- */
+
+table.services {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+
+/* A listing rather than a table: an entry is one thing with a name, not a set
+   of values to read down a column, and its parts wrap instead
+   of scrolling sideways when the window is narrow.
+   The entries are separated by a rule rather than boxed — a box around each
+   one, or around the set, adds an edge for every entry and there is nothing
+   for those edges to say. */
+ul.listing {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+li.entry {
+	display: block;
+	padding: 0.85rem 0.15rem;
+	border-top: 1px solid var(--border);
+}
+
+/* The name and the controls share the first line; the description and the
+   badges each get one of their own. */
+.entry-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem 0.85rem;
+}
+
+li.entry:first-child {
+	border-top: none;
+}
+
+li.entry .col-name {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+li.entry .col-actions {
+	flex: 0 0 auto;
+	width: auto;
+}
+
+li.entry .name {
+	font-size: 0.9375rem;
+}
+
+/* The name inside the project, beside the title the image gave itself. */
+.service-name {
+	margin-left: 0.35rem;
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.8125rem;
+}
+
+li.entry .description {
+	display: block;
+	/* Undoing the 60ch that .description carries for the detail header. Not
+	   declaring a max-width here is not the same as not having one: the more
+	   general rule still applies to everything this one does not name. */
+	max-width: none;
+	margin: 0.25rem 0 0;
+	color: var(--muted);
+	font-size: 0.8125rem;
+	line-height: 1.4;
+}
+
+li.service.flash {
+	animation: flash 1.2s ease-out;
+}
+
+th {
+	padding: 0.6rem 0.85rem;
+	border-bottom: 1px solid var(--border);
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-align: left;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+td {
+	padding: 0.65rem 0.85rem;
+	border-bottom: 1px solid var(--border);
+	vertical-align: top;
+}
+
+tr:last-child td {
+	border-bottom: none;
+}
+
+@keyframes flash {
+	from {
+		background: color-mix(in srgb, var(--accent) 18%, transparent);
+	}
+}
+
+/* An entry for a service that is not up is dimmed rather than hidden: the
+   point of the services page is that an offline service is still a service. */
+.service[data-online="false"] {
+	color: var(--muted);
+}
+
+/* The front page shows what is running. The rest are still rendered, so the
+   totals above stay counted from them and a service that stops while the page
+   is open leaves the listing on its own. */
+.running-only .service[data-online="false"] {
+	display: none;
+}
+
+.col-name .name {
+	color: inherit;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.col-name .name:hover {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+.col-name .replica {
+	margin-left: 0.3rem;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+/* The badge line. In the table it sits under the name inside its cell; on the
+   listing it is a line of its own under the description. */
+li.entry .sub,
+.col-name .sub {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem;
+	margin-top: 0.2rem;
+}
+
+/* Under a description rather than tucked under a name, so it needs the room to
+   read as a separate line rather than a continuation. */
+li.entry .sub {
+	margin-top: 0.6rem;
+}
+
+.badge-container,
+.badge-image {
+	font-family: var(--mono);
+	font-weight: 400;
+}
+
+.badge-image {
+	max-width: 100%;
+	min-width: 0;
+}
+
+.badge-image span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Nothing refers to it, which is the one thing about a network or a volume
+   worth noticing at a glance — it is the state in which it can be removed. */
+.badge-unused {
+	background: var(--offline-bg);
+	color: var(--offline);
+}
+
+.badge-driver,
+.badge-subnet {
+	font-family: var(--mono);
+	font-weight: 400;
+}
+
+/* Reachable from the host, which is the one thing about a port worth noticing
+   at a glance. */
+.badge-port-published {
+	background: color-mix(in srgb, var(--accent) 14%, var(--neutral-bg));
+	color: var(--accent);
+}
+
+.badge-uptime {
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+.col-image code {
+	font-family: var(--mono);
+	font-size: 0.8125rem;
+	word-break: break-word;
+}
+
+.col-ports .port {
+	display: inline-block;
+	margin: 0 0.25rem 0.2rem 0;
+	padding: 0.1rem 0.35rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.75rem;
+}
+
+/* A published port is reachable from the host, which is the one thing about a
+   port worth noticing at a glance. */
+.col-ports .port-published {
+	border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+	color: var(--accent);
+}
+
+/* Badges ------------------------------------------------------------------ */
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.1rem 0.45rem;
+	border-radius: 999px;
+	background: var(--neutral-bg);
+	color: var(--neutral);
+	font-size: 0.75rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+/* The mark takes the badge's colour, which is the reason it is inlined rather
+   than linked, and is sized from the text so it stays in proportion. */
+.badge svg {
+	flex: none;
+	width: 0.95em;
+	height: 0.95em;
+}
+
+.badge-running {
+	background: var(--online-bg);
+	color: var(--online);
+}
+
+.badge-exited,
+.badge-created,
+.badge-paused {
+	background: var(--offline-bg);
+	color: var(--offline);
+}
+
+.badge-restarting,
+.badge-removing,
+.badge-dead,
+.badge-unknown {
+	background: var(--danger-bg);
+	color: var(--danger);
+}
+
+.badge-health-healthy {
+	background: var(--online-bg);
+	color: var(--online);
+}
+
+.badge-health-starting {
+	background: var(--neutral-bg);
+	color: var(--neutral);
+}
+
+.badge-health-unhealthy {
+	background: var(--danger-bg);
+	color: var(--danger);
+}
+
+
+.muted {
+	color: var(--muted);
+}
+
+/* Actions ----------------------------------------------------------------- */
+
+.col-actions {
+	width: 1%;
+	text-align: right;
+	white-space: nowrap;
+}
+
+
+/* A stopped service has two buttons. They are wrapped in their own flex row
+   rather than spaced by a margin, so they sit the same distance apart wherever
+   they appear — as direct children of the detail header they would otherwise
+   inherit that header's much wider gap.
+   The wrapper is what flexes; the cell around it on the list stays a plain
+   <td>, because making that a flex container takes it out of the table's
+   layout and the column stops aligning. */
+.actions {
+	display: flex;
+	gap: 0.35rem;
+	justify-content: flex-end;
+}
+
+.action-form {
+	margin: 0;
+}
+
+a.action,
+button.action {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.2rem 0.6rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+a.action {
+	text-decoration: none;
+}
+
+a.action svg,
+button.action svg {
+	flex: none;
+	width: 0.95em;
+	height: 0.95em;
+}
+
+/* Opening the service is the one action here that is not about the container,
+   so it reads as a link rather than a warning. */
+a.action.open {
+	color: var(--accent);
+}
+
+a.action.open:hover {
+	border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+	background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+button.action.stop {
+	color: var(--danger);
+}
+
+button.action.start {
+	color: var(--online);
+}
+
+a.action.remove {
+	color: var(--muted);
+}
+
+button.action.stop:hover:not(:disabled) {
+	border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+	background: var(--danger-bg);
+}
+
+button.action.start:hover:not(:disabled) {
+	border-color: color-mix(in srgb, var(--online) 50%, var(--border));
+	background: var(--online-bg);
+}
+
+/* Remove is deliberately the quietest of the three until it is hovered: it is
+   the one action that cannot be undone, and it sits next to the one that is
+   used most. */
+a.action.remove:hover {
+	border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+	background: var(--danger-bg);
+	color: var(--danger);
+}
+
+a.action:focus-visible,
+button.action:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+button.action:disabled {
+	color: var(--muted);
+	cursor: default;
+}
+
+/* Logs -------------------------------------------------------------------- */
+
+.panel-wide {
+	margin-top: 1rem;
+}
+
+.logs-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.log-sizes {
+	display: flex;
+	gap: 0.35rem;
+}
+
+.log-size {
+	padding: 0.1rem 0.45rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--muted);
+	font: inherit;
+	font-size: 0.75rem;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.log-size:hover {
+	color: var(--accent);
+}
+
+.log-size.active {
+	border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+	color: var(--accent);
+}
+
+/* Folded panels ----------------------------------------------------------- */
+
+details.folded {
+	padding: 0;
+}
+
+details.folded > summary {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 1rem 1.15rem;
+	cursor: pointer;
+	list-style: none;
+}
+
+details.folded > summary::-webkit-details-marker {
+	display: none;
+}
+
+.fold-title {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* A triangle drawn in CSS, so the marker turns with the panel without an
+   image or a script. */
+.fold-title::before {
+	content: "▸";
+	display: inline-block;
+	margin-right: 0.4rem;
+	transition: transform 0.12s ease;
+}
+
+details.folded[open] > summary .fold-title::before {
+	transform: rotate(90deg);
+}
+
+.fold-count {
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.75rem;
+}
+
+.fold-body {
+	padding: 0 1.15rem 1.15rem;
+}
+
+/* Confirmation dialog ----------------------------------------------------- */
+
+#confirm-dialog {
+	max-width: min(30rem, calc(100vw - 2rem));
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+}
+
+#confirm-dialog::backdrop {
+	background: rgb(0 0 0 / 45%);
+}
+
+.confirm {
+	padding: 1.25rem;
+}
+
+.confirm h2 {
+	margin: 0 0 0.5rem;
+	font-size: 1.0625rem;
+}
+
+.confirm-subject {
+	margin: 0 0 0.5rem;
+	word-break: break-all;
+}
+
+.confirm-consequence {
+	margin: 0 0 1rem;
+	color: var(--muted);
+}
+
+.confirm-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+.confirm-actions .action {
+	padding: 0.35rem 0.9rem;
+	font-size: 0.8125rem;
+}
+
+.confirm-panel {
+	max-width: 34rem;
+}
+
+/* Log --------------------------------------------------------------------- */
+
+.log-controls {
+	display: flex;
+	gap: 0.35rem;
+	margin-bottom: 0.5rem;
+}
+
+pre.log {
+	max-height: 30rem;
+	margin: 0.75rem 0 0;
+	padding: 0.75rem;
+	overflow: auto;
+	border-radius: 6px;
+	background: var(--bg);
+	font-family: var(--mono);
+	font-size: 0.875rem;
+	line-height: 1.6;
+	/* Long lines wrap rather than forcing the panel to scroll sideways, which
+	   for a log is almost always what is wanted. */
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.log-line {
+	display: block;
+}
+
+/* stderr is tinted rather than boxed: the point is to pick it out while
+   scanning, not to interrupt the flow of the log. */
+.log-stderr {
+	color: var(--danger);
+}
+
+.log-time {
+	display: inline-block;
+	min-width: 7rem;
+	color: var(--muted);
+	user-select: none;
+}
+
+/* Screen-reader-only text: a column of buttons needs a header for the table
+   to make sense read aloud, but the header would be noise on screen. */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* Empty and error states -------------------------------------------------- */
+
+.empty {
+	margin: 1rem 0 0;
+	color: var(--muted);
+	font-size: 0.875rem;
+}
+
+.error {
+	padding: 1.25rem;
+	border: 1px solid var(--border);
+	border-left: 3px solid var(--danger);
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+
+.error h2 {
+	margin: 0 0 0.5rem;
+	font-size: 1.0625rem;
+}
+
+.error p {
+	margin: 0 0 0.75rem;
+	color: var(--muted);
+}
+
+.error ul {
+	margin: 0;
+	padding-left: 1.1rem;
+}
+
+.error li + li {
+	margin-top: 0.5rem;
+}
+
+.error strong {
+	color: var(--text);
+}
+
+.error pre {
+	margin: 0.75rem 0 0;
+	padding: 0.75rem;
+	overflow-x: auto;
+	border-radius: 6px;
+	background: var(--bg);
+	font-family: var(--mono);
+	font-size: 0.8125rem;
+}
+
+code {
+	font-family: var(--mono);
+}
+
+@media (max-width: 720px) {
+	.col-image,
+	.col-ports {
+		display: none;
+	}
+}

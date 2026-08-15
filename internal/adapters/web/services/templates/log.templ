@@ -1,0 +1,77 @@
+package templates
+
+import (
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// Log is the folded panel the container's output goes in.
+//
+// It renders empty and carries the URL to fill itself from. Reading a log
+// costs a request to the daemon and can be megabytes, and most visits to a
+// detail page are not about the log — so it is fetched when it is opened, and
+// not before.
+templ Log(detail domain.ServiceDetail) {
+	<details
+		class="panel folded log-panel"
+		data-log-url={ "/services/" + detail.ContainerID + "/log" }
+	>
+		<summary>
+			<span class="fold-title">Log</span>
+			<span class="fold-count">on open</span>
+		</summary>
+		<div class="fold-body" data-log-body>
+			<p class="muted" data-log-placeholder>Loading…</p>
+			<noscript>
+				<a href={ templ.SafeURL("/services/" + detail.ContainerID + "/log") }>Open the log</a>
+			</noscript>
+		</div>
+	</details>
+}
+
+// LogBody is the fragment the panel fills itself with, and also what the
+// no-script link renders on its own.
+templ LogBody(containerID string, logs domain.Logs, failure string) {
+	<div class="log-controls">
+		for _, size := range []int{50, 200, 1000} {
+			<button
+				type="button"
+				class={ "log-size", templ.KV("active", logs.Tail == size) }
+				data-log-tail={ shared.FormatInt(size) }
+			>{ shared.FormatInt(size) }</button>
+		}
+		<button type="button" class="log-size" data-log-tail={ shared.FormatInt(logs.Tail) }>Refresh</button>
+	</div>
+	if failure != "" {
+		<p class="muted">The log could not be read: { failure }</p>
+	} else if len(logs.Lines) == 0 {
+		<p class="muted">This container has produced no output.</p>
+	} else {
+		if logs.Truncated {
+			<p class="muted">
+				Showing the last { shared.FormatInt(logs.Tail) } lines. There is very
+				likely more above.
+			</p>
+		}
+		<pre class="log"><code>for _, line := range logs.Lines {
+				<span class={ "log-line", "log-" + string(line.Stream) }><span class="log-time">{ shared.FormatLogTime(line.At) }</span>{ line.Text }</span>
+			}</code></pre>
+	}
+}
+
+// LogPage wraps the fragment for a browser fetching it directly.
+templ LogPage(project string, detail domain.ServiceDetail, logs domain.Logs, failure string) {
+	@shared.Layout(project+" — "+detail.Name+" log", "services", project) {
+		<main>
+			<header class="page-header">
+				<div class="titles">
+					@shared.Breadcrumbs(shared.Trail(project, "Services", "/services", detail.Name, "/services/"+detail.ContainerID, "Log"))
+					<h1>Log</h1>
+				</div>
+			</header>
+			<section class="panel">
+				@LogBody(detail.ContainerID, logs, failure)
+			</section>
+		</main>
+	}
+}

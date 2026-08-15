@@ -1,0 +1,130 @@
+package templates
+
+import (
+	"github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// ServiceItem is how a service appears on both listings. It is here rather
+// than beside either page because it is rendered twice — once by a page load
+// and once by the event stream — and an entry that arrived live must be
+// identical to the same entry drawn by a reload.
+
+// ServiceItem is one service as a line of a listing.
+//
+// showState is the only thing that differs between the two pages that draw it.
+// The front page shows what is running, so a state on every line would be one
+// repeated word; the services page shows every state, so it leads with it.
+templ ServiceItem(service domain.Service, controllable bool, showState bool) {
+	<li
+		class="entry service"
+		data-service-id={ service.ContainerID }
+		data-sort={ SortKey(service) }
+		data-online={ OnlineAttr(service) }
+	>
+		// Three lines: what it is and what can be done with it, then what it
+		// says about itself, then its facts. The description and the badges
+		// each get the width to themselves rather than sharing a row with the
+		// controls.
+		<span class="entry-head">
+			<span class="col-name">
+				<a class="name" href={ templ.SafeURL("/services/" + service.ContainerID) }>{ service.DisplayName() }</a>
+				// The name inside the project, kept beside the title when the
+				// image supplied one — the two are different things and the
+				// compose file only knows the second.
+				if service.HasTitle() {
+					<span class="service-name">{ service.Name }</span>
+				}
+				if label := ReplicaLabel(service); label != "" {
+					<span class="replica">{ label }</span>
+				}
+			</span>
+			<span class="col-actions">
+				@ServiceActions(service, controllable)
+			</span>
+		</span>
+		if service.Description != "" {
+			<span class="description">{ service.Description }</span>
+		}
+		<span class="sub">
+			if showState {
+				@Badge("badge-"+StateLabel(service), icons.State, StateLabel(service), "Container state")
+			}
+			@Badge("badge-container", icons.Container, ShortID(service), service.ContainerName)
+			// The tooltip carries the runtime's own wording, which says what the
+			// badge leaves out — the exit code, the health — without the badge
+			// having to repeat what the state badge beside it already says.
+			@Badge("badge-uptime", icons.Clock, UptimeLabel(service), service.Status)
+			if health := service.CurrentHealth(); health != domain.HealthNone {
+				@Badge("badge-health-"+string(health), icons.Pulse, string(health), "Healthcheck: "+string(health))
+			}
+			if service.Image != "" {
+				@Badge("badge-image", icons.Layers, ShortImage(service.Image), service.Image)
+			}
+			// No dash here, unlike the table: a listing of badges with a
+			// placeholder among them reads as a badge saying nothing.
+			for _, port := range service.Ports {
+				@Badge(PortClass(port), icons.Port, PortLabel(port), PortTitle(port))
+			}
+		</span>
+	</li>
+}
+
+// ServiceActions is what can be done with a service: opening it, and — where
+// the deployment allows — starting, stopping and removing it. It is shared by
+// both shapes and the detail page, so none of them can offer different actions
+// for the same service.
+templ ServiceActions(service domain.Service, controllable bool) {
+	<div class="actions">
+		// Only while it is up: a link to a service that is not running goes
+		// nowhere, and offering it invites the reader to find that out.
+		if service.URL != "" && service.Online() {
+			<a class="action open" href={ templ.SafeURL(service.URL) } title={ service.URL } target="_blank" rel="noreferrer">
+				@icons.SVG(icons.External)
+				<span>Open</span>
+			</a>
+		}
+		// Nested rather than returned early. A `return` here leaves the
+		// enclosing element unwritten — templ emits the closing tag after the
+		// body, so skipping the body skips the tag with it, and everything
+		// after the control lands inside a div that was never closed.
+		if controllable {
+			if service.Online() {
+				<form method="post" action={ templ.SafeURL("/services/" + service.ContainerID + "/stop") } class="action-form">
+					<button type="submit" class="action stop">
+						@icons.SVG(icons.Stop)
+						<span>Stop</span>
+					</button>
+				</form>
+			} else {
+				<form method="post" action={ templ.SafeURL("/services/" + service.ContainerID + "/start") } class="action-form">
+					<button type="submit" class="action start">
+						@icons.SVG(icons.Play)
+						<span>Start</span>
+					</button>
+				</form>
+				@RemoveLink("/services/" + service.ContainerID + "/remove")
+			}
+		}
+	</div>
+}
+
+// RemoveLink is the control that starts a removal.
+//
+// It is a link to a server-rendered confirmation page, enhanced by htmx into a
+// modal: without JavaScript it navigates there and the page asks the same
+// question with the same form. The confirmation is never client-side text —
+// what it says comes from the server, which is also the thing that will refuse
+// if the answer has changed by the time it is submitted.
+templ RemoveLink(href string) {
+	<a
+		class="action remove"
+		href={ templ.SafeURL(href) }
+		hx-get={ href }
+		hx-target="#confirm-body"
+		hx-swap="innerHTML"
+	>
+		@icons.SVG(icons.Trash)
+		<span>Remove</span>
+	</a>
+}

@@ -1,0 +1,57 @@
+package templates
+
+// Unavailable is what every page shows when the container runtime cannot be
+// reached. The service keeps running and keeps trying, so the page reloads
+// itself rather than leaving a stale error on screen after the cause is fixed.
+templ Unavailable(project string, active string, reason string) {
+	@Layout(project+" — unavailable", active, project) {
+		<meta http-equiv="refresh" content="10"/>
+		<main>
+			<header class="page-header">
+				@PageHeading("Unavailable", "")
+			</header>
+			<div class="error">
+				<h2>The Docker socket could not be read</h2>
+				<p>
+					This page retries by itself, so fixing either of these is enough —
+					there is no need to restart the service.
+				</p>
+				<ul>
+					<li>
+						<strong>Not mounted.</strong> Check the socket is mounted into this
+						container and that <code>DOCKER_HOST</code> points at it.
+					</li>
+					<li>
+						<strong>Mounted but not readable.</strong> A <code>permission denied</code>
+						below means the socket is there and this user may not open it. The
+						socket is mode 660, and the container runs as a non-root user, so it
+						needs a supplementary group matching the socket's owner — as the
+						<em>container</em> sees it, which is not always what the host reports.
+					</li>
+				</ul>
+				<pre>{ reason }</pre>
+			</div>
+		</main>
+	}
+}
+
+// NotFound is shown when a detail page is asked for something the project does
+// not own. It says the same thing whether the id names nothing at all or
+// something belonging to another project, because the service should not
+// confirm what else is on the host.
+templ NotFound(project string, active string, what string) {
+	@Layout(project+" — not found", active, project) {
+		<main>
+			<header class="page-header">
+				@PageHeading("Not found", "")
+			</header>
+			<div class="error">
+				<h2>No such { what } in this project</h2>
+				<p>
+					It may have been removed, or it may belong to another project. This
+					page only shows what is labelled for <strong>{ project }</strong>.
+				</p>
+			</div>
+		</main>
+	}
+}

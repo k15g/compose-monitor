@@ -1,0 +1,42 @@
+package templates
+
+import "github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+
+// Confirm is the body of a removal confirmation: the question, what it costs,
+// and the form that does it.
+//
+// It is rendered by the server and swapped into the dialog by htmx, so the
+// modal and the full-page fallback are the same markup. `consequence` is the
+// sentence that says what will be lost — different for a container, a network
+// and a volume, and worth spelling out for the one that destroys data.
+templ Confirm(title string, subject string, consequence string, action templ.SafeURL, cancel templ.SafeURL) {
+	<div class="confirm">
+		<h2>{ title }</h2>
+		<p class="confirm-subject"><code>{ subject }</code></p>
+		<p class="confirm-consequence">{ consequence }</p>
+		<div class="confirm-actions">
+			<a class="action" href={ cancel } data-close-dialog>Cancel</a>
+			<form method="post" action={ action }>
+				<button type="submit" class="action remove">
+					@icons.SVG(icons.Trash)
+					<span>Remove</span>
+				</button>
+			</form>
+		</div>
+	</div>
+}
+
+// ConfirmPage is the same question as a whole page, for a browser that did not
+// run the script that would have made it a modal.
+templ ConfirmPage(project string, active string, title string, subject string, consequence string, action templ.SafeURL, cancel templ.SafeURL) {
+	@Layout(project+" — "+title, active, project) {
+		<main>
+			<header class="page-header">
+				@PageHeading(title, "")
+			</header>
+			<div class="panel confirm-panel">
+				@Confirm(title, subject, consequence, action, cancel)
+			</div>
+		</main>
+	}
+}

@@ -1,0 +1,43 @@
+package templates
+
+import (
+	"strconv"
+
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// List is the services page: the project's totals, and an entry per service.
+//
+// The same listing as the front page, with the state shown — this page carries
+// every state, so it is the thing that tells the entries apart. The totals
+// carry ids because the client recomputes them from the entries after every
+// event rather than the server sending a second event for them.
+templ List(project string, services []domain.Service, summary domain.Summary, controllable bool) {
+	@shared.Layout(project+" — services", "services", project) {
+		<main>
+			<header class="page-header">
+				@shared.PageHeadingIn(shared.Trail(project, "Services", "/services"), "Services", "Containers Compose created for this project")
+				<div class="totals">
+					<div class="total total-online">
+						<span class="count" id="count-online">{ strconv.Itoa(summary.Online) }</span>
+						<span class="label">online</span>
+					</div>
+					<div class="total total-offline">
+						<span class="count" id="count-offline">{ strconv.Itoa(summary.Offline) }</span>
+						<span class="label">offline</span>
+					</div>
+				</div>
+			</header>
+			<ul class="listing" id="service-rows">
+				for _, service := range services {
+					@shared.ServiceItem(service, controllable, true)
+				}
+			</ul>
+			<p class="empty" id="empty" hidden?={ len(services) > 0 }>
+				No containers are labelled for this project. Nothing has been brought up,
+				or the project name does not match the <code>name:</code> in its compose file.
+			</p>
+		</main>
+	}
+}

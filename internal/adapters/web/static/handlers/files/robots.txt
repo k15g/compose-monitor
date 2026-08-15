@@ -1,0 +1,5 @@
+# This page lists what is running on one machine, and every deployment of it
+# describes a different machine. None of it is worth indexing and some of it is
+# worth not publishing, so nothing here is crawlable.
+User-agent: *
+Disallow: /

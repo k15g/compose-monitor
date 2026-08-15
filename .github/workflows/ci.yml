@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: make deps
+
+      # The templates' generated Go is committed, so it can go stale when a
+      # .templ change is committed without a regeneration. Regenerating and
+      # failing on a diff is what stops that reaching main.
+      - name: Verify generated templates are current
+        run: |
+          make generate
+          git diff --exit-code -- '*_templ.go' \
+            || { echo "::error::templ output is stale — run 'make generate' and commit the result"; exit 1; }
+
+      - name: Vet
+        run: make vet
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
+      - name: Build
+        run: make build
+
+  # Only after the checks above have passed, and never for a pull request:
+  # a fork's pull request has no business pushing to the registry.
+  publish:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # What lets GITHUB_TOKEN push to the registry. No other secret is needed:
+      # the package belongs to this repository.
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # A release is its own version; anything else is stamped with when it was
+      # built and what it was built from, so two edge images can be told apart
+      # and either can be traced back to a commit.
+      - name: Work out the version
+        id: version
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(date +%s)-$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Building version ${version}"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # What the image is tagged with, and the labels stamped into it:
+      #
+      #   a push to main   → edge
+      #   a release v1.0.1 → 1.0.1 and latest
+      #
+      # `latest` moves only on a release, so it never points at an untagged
+      # commit — and never at a pre-release, which semver marks and this skips.
+      - name: Work out the tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=edge,enable=${{ github.event_name == 'push' }}
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
+          labels: |
+            org.opencontainers.image.title=Compose Monitor
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+
+      # One build, every tag. Passing the tags to a single build is what makes
+      # the versioned image and `latest` the same image rather than two builds
+      # of the same commit that happen to agree.
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

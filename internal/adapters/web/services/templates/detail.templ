@@ -1,0 +1,199 @@
+package templates
+
+import (
+	"strconv"
+
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// Detail is everything known about one service.
+//
+// Three regions: a header that says what this is, a sidebar of the facts that
+// identify it, and a main column for everything that varies in size. The long
+// lists in that column are folded, because a container carries a dozen labels
+// it never asked for and unfolding them buries what was actually being looked
+// for.
+templ Detail(project string, detail domain.ServiceDetail, controllable bool) {
+	@shared.Layout(project+" — "+detail.Name, "services", project) {
+		<main class="detail">
+			<header class="detail-header">
+				<div class="identity">
+					@shared.Breadcrumbs(shared.Trail(project, "Services", "/services", detail.Name))
+					// The name inside the project, which is what the compose file
+					// and every other page call it — kept above the title, because
+					// the title below may come from the image and say something
+					// else entirely.
+					<p class="internal-name">
+						<code>{ detail.Name }</code>
+						if label := shared.ReplicaLabel(detail.Service); label != "" {
+							<span class="replica">{ label }</span>
+						}
+						<span class="container">{ detail.ContainerName }</span>
+					</p>
+					<h1>{ detail.DisplayName() }</h1>
+					if detail.Description != "" {
+						<p class="description">{ detail.Description }</p>
+					}
+					<p class="badges">
+						<span class={ "badge", "badge-" + shared.StateLabel(detail.Service) }>
+							{ shared.StateLabel(detail.Service) }
+						</span>
+						if health := detail.CurrentHealth(); health != domain.HealthNone {
+							<span class={ "badge", "badge-health-" + string(health) }>
+								{ string(health) }
+							</span>
+						}
+					</p>
+				</div>
+				@shared.ServiceActions(detail.Service, controllable)
+			</header>
+			<div class="detail-body">
+				<div class="detail-main">
+					<section class="panel">
+						<h2>Ports</h2>
+						if len(detail.Ports) == 0 {
+							<p class="muted">This service exposes no ports.</p>
+						} else {
+							if detail.PortsConfigured {
+								<p class="muted">
+									What it is configured to listen on. It is not running, so
+									nothing is bound right now.
+								</p>
+							}
+							<ul class="plain">
+								for _, port := range detail.Ports {
+									<li>
+										<span class={ "port", templ.KV("port-published", port.Published()) }>
+											{ shared.PortLabel(port) }
+										</span>
+										if !port.Published() {
+											<span class="muted">reachable only from the project's networks</span>
+										}
+									</li>
+								}
+							</ul>
+						}
+					</section>
+					<section class="panel">
+						<h2>Networks</h2>
+						if len(detail.Networks) == 0 {
+							<p class="muted">This service is on no network.</p>
+						} else {
+							<table class="pairs">
+								<tbody>
+									for _, attachment := range detail.Networks {
+										<tr>
+											<th scope="row">
+												if attachment.NetworkID != "" {
+													<a href={ templ.SafeURL("/networks/" + attachment.NetworkID) }>{ attachment.Name }</a>
+												} else {
+													{ attachment.Name }
+												}
+											</th>
+											<td>
+												<code>{ shared.Or(attachment.IPAddress) }</code>
+												for _, alias := range attachment.Aliases {
+													<span class="alias">{ alias }</span>
+												}
+											</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						}
+					</section>
+					// A service that mounts nothing says nothing by mounting
+					// nothing, so the panel is left out rather than filled with
+					// a sentence saying it is empty.
+					if len(detail.Mounts) > 0 {
+						<section class="panel">
+							<h2>Mounts</h2>
+							<table class="pairs">
+								<tbody>
+									for _, mount := range detail.Mounts {
+										<tr>
+											<th scope="row">
+												if mount.Type == "volume" {
+													<a href={ templ.SafeURL("/volumes/" + mount.Source) }><code>{ mount.Source }</code></a>
+												} else {
+													<code>{ mount.Source }</code>
+												}
+											</th>
+											<td>
+												<code>{ mount.Destination }</code>
+												<span class="muted">{ mount.Type }</span>
+												if !mount.ReadWrite {
+													<span class="badge">read-only</span>
+												}
+											</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						</section>
+					}
+					// Empty folds are left out too — a group whose only content
+					// is "there is nothing here" is a row to open and be
+					// disappointed by. The label groups already drop themselves
+					// the same way.
+					if len(detail.Environment) > 0 {
+						@shared.Folded("Environment", shared.FormatInt(len(detail.Environment))) {
+							@shared.PairsTable(detail.Environment)
+							<p class="footnote">
+								Values whose name suggests a secret are hidden. The page has no
+								authentication, so the names are shown and the values are not.
+							</p>
+						}
+					}
+					for _, group := range domain.GroupLabels(detail.Labels) {
+						@shared.Folded(group.Title+" labels", shared.FormatInt(len(group.Labels))) {
+							@shared.PairsTable(group.Labels)
+						}
+					}
+					@Log(detail)
+				</div>
+				<aside class="sidebar">
+					@shared.Properties("Container") {
+						@shared.CodeProperty("ID", detail.ContainerID)
+						@shared.CodeProperty("Image", shared.Or(detail.Image))
+						@shared.CodeProperty("Command", shared.JoinCommand(detail.Command))
+						@shared.CodeProperty("Working directory", shared.Or(detail.WorkingDir))
+						if detail.User != "" {
+							@shared.Property("User", detail.User)
+						}
+						@shared.Property("Platform", shared.Or(detail.Platform))
+					}
+					@shared.Properties("Lifecycle") {
+						@shared.Property("Created", shared.FormatTime(detail.Created))
+						@shared.Property("Started", shared.FormatTime(detail.StartedAt))
+						if !detail.FinishedAt.IsZero() {
+							@shared.Property("Finished", shared.FormatTime(detail.FinishedAt))
+						}
+						// Only a non-zero one. A container that exited cleanly says
+						// so by being exited; a zero here is a row that reads as
+						// information and carries none.
+						if code := shared.ExitCodeLabel(detail); code != "" {
+							@shared.Property("Exit code", code)
+						}
+						@shared.Property("Restart policy", shared.Or(detail.RestartPolicy))
+						// Only when it has restarted. Zero is the ordinary case and
+						// says nothing; any other number is worth noticing.
+						if detail.RestartCount > 0 {
+							@shared.Property("Restart count", strconv.Itoa(detail.RestartCount))
+						}
+						if !detail.Online() && detail.Health != domain.HealthNone {
+							// Said here rather than as a badge above, where it
+							// would read as the container's current state
+							// instead of the last thing known before it stopped.
+							@shared.Property("Health when last running", string(detail.Health))
+						}
+						if detail.Error != "" {
+							@shared.Property("Error", detail.Error)
+						}
+					}
+				</aside>
+			</div>
+		</main>
+	}
+}

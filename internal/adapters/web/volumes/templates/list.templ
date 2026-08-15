@@ -1,0 +1,55 @@
+package templates
+
+import (
+	"github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// List is the project's volumes.
+templ List(project string, vols []domain.Volume, controllable bool) {
+	@shared.Layout(project+" — volumes", "volumes", project) {
+		<main>
+			<header class="page-header">
+				@shared.PageHeadingIn(shared.Trail(project, "Volumes", "/volumes"), "Volumes", "Volumes Compose created for this project")
+			</header>
+			@Listing(vols, controllable)
+		</main>
+	}
+}
+
+// Listing is the volumes, drawn the same way as the services.
+templ Listing(vols []domain.Volume, controllable bool) {
+	<ul class="listing">
+		for _, volume := range vols {
+			<li class="entry">
+				<span class="entry-head">
+					<span class="col-name">
+						<a class="name" href={ templ.SafeURL("/volumes/" + volume.Name) }>{ volume.Name }</a>
+					</span>
+					<span class="col-actions">
+						<div class="actions">
+							// A volume still mounted by anything — including a stopped
+							// container — is one the runtime refuses to remove, and one
+							// whose data is still wanted.
+							if controllable && !volume.InUse() {
+								@shared.RemoveLink("/volumes/" + volume.Name + "/remove")
+							}
+						</div>
+					</span>
+				</span>
+				<span class="sub">
+					@shared.Badge("badge-driver", icons.Gear, volume.Driver, "Volume driver")
+					@shared.Badge(shared.UsageClass(volume.UsedBy), icons.Container, shared.UsageLabel(volume.UsedBy), "Containers mounting this volume")
+				</span>
+			</li>
+		}
+	</ul>
+	if len(vols) == 0 {
+		<p class="empty">
+			No volumes are labelled for this project. A volume declared
+			<code>external: true</code> was not created by Compose and carries no
+			label, so it is not listed here.
+		</p>
+	}
+}

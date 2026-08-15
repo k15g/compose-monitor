@@ -1,0 +1,59 @@
+package templates
+
+import (
+	"github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// List is the project's networks.
+templ List(project string, nets []domain.Network, controllable bool) {
+	@shared.Layout(project+" — networks", "networks", project) {
+		<main>
+			<header class="page-header">
+				@shared.PageHeadingIn(shared.Trail(project, "Networks", "/networks"), "Networks", "Networks Compose created for this project")
+			</header>
+			@Listing(nets, controllable)
+		</main>
+	}
+}
+
+// Listing is the networks, drawn the same way as the services: a name, what
+// can be done with it, and the facts beside it as badges.
+templ Listing(nets []domain.Network, controllable bool) {
+	<ul class="listing">
+		for _, network := range nets {
+			<li class="entry">
+				<span class="entry-head">
+					<span class="col-name">
+						<a class="name" href={ templ.SafeURL("/networks/" + network.ID) }>{ network.Name }</a>
+					</span>
+					<span class="col-actions">
+						<div class="actions">
+							// Offered only where it would succeed: a network with
+							// anything attached is one the runtime refuses to remove.
+							if controllable && !network.InUse() {
+								@shared.RemoveLink("/networks/" + network.ID + "/remove")
+							}
+						</div>
+					</span>
+				</span>
+				<span class="sub">
+					@shared.Badge("badge-container", icons.Network, network.ShortID(), network.ID)
+					@shared.Badge("badge-driver", icons.Gear, network.Driver, "Network driver")
+					for _, subnet := range network.Subnets {
+						@shared.Badge("badge-subnet", icons.Globe, subnet.Range, "Gateway "+shared.Or(subnet.Gateway))
+					}
+					@shared.Badge(shared.UsageClass(network.UsedBy), icons.Container, shared.UsageLabel(network.UsedBy), "Containers attached to this network")
+				</span>
+			</li>
+		}
+	</ul>
+	if len(nets) == 0 {
+		<p class="empty">
+			No networks are labelled for this project. A network declared
+			<code>external: true</code> was not created by Compose and carries no
+			label, so it belongs to whoever made it and is not listed here.
+		</p>
+	}
+}

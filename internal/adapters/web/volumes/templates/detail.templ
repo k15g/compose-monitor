@@ -1,0 +1,76 @@
+package templates
+
+import (
+	"github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+	shared "github.com/k15g/compose-monitor/internal/adapters/web/shared/templates"
+	"github.com/k15g/compose-monitor/internal/domain"
+)
+
+// Detail is everything known about one volume.
+//
+// The same three regions as a service and a network: a header saying what this
+// is and what can be done with it, a sidebar of the facts that identify it, and
+// a main column for the lists — which for a volume is its labels, and its
+// driver options when it has any.
+templ Detail(project string, volume domain.Volume, controllable bool) {
+	@shared.Layout(project+" — "+volume.Name, "volumes", project) {
+		<main class="detail">
+			<header class="detail-header">
+				<div class="identity">
+					@shared.Breadcrumbs(shared.Trail(project, "Volumes", "/volumes", volume.Name))
+					<h1>{ volume.Name }</h1>
+					<p class="badges">
+						@shared.Badge("badge-driver", icons.Gear, volume.Driver, "Volume driver")
+						@shared.Badge(shared.UsageClass(volume.UsedBy), icons.Container, shared.UsageLabel(volume.UsedBy), "Containers mounting this volume")
+					</p>
+				</div>
+				if controllable && !volume.InUse() {
+					<div class="actions">
+						@shared.RemoveLink("/volumes/" + volume.Name + "/remove")
+					</div>
+				}
+			</header>
+			<div class="detail-body">
+				<div class="detail-main">
+					// Options sit here rather than in the sidebar because they
+					// are a list of pairs like the labels beside them, and
+					// because most volumes have none — a sidebar entry that is
+					// usually absent is a hole in the sidebar. Pairs draws
+					// nothing at all when there is nothing to draw.
+					@shared.Pairs("Options", volume.Options)
+					// The same families as a service, folded the same way. The
+					// generic group appears only when something is in it, so a
+					// resource carrying nothing but Compose's own labels shows
+					// one fold rather than two.
+					for _, group := range domain.GroupLabels(volume.Labels) {
+						@shared.Folded(group.Title+" labels", shared.FormatInt(len(group.Labels))) {
+							@shared.PairsTable(group.Labels)
+						}
+					}
+				</div>
+				<aside class="sidebar">
+					@shared.Properties("Volume") {
+						@shared.CodeProperty("Name", volume.Name)
+						@shared.Property("Driver", volume.Driver)
+						@shared.Property("Scope", shared.Or(volume.Scope))
+						@shared.Property("Created", shared.FormatTime(volume.Created))
+						@shared.CodeProperty("Mountpoint", shared.Or(volume.Mountpoint))
+						// Only when it was measured. Asking the daemon to measure
+						// makes it walk the filesystem, so this page does not —
+						// and a row saying "not measured" says nothing about the
+						// volume, only about what was asked for.
+						if volume.Size >= 0 {
+							@shared.Property("Size", shared.FormatSize(volume.Size))
+						}
+						@shared.Property("Used by", shared.InUseLabel(volume.UsedBy))
+					}
+					<p class="footnote">
+						The mountpoint is a path on the Docker host, not inside this
+						container — it is where the daemon keeps the volume, and is shown
+						so it can be found from the host.
+					</p>
+				</aside>
+			</div>
+		</main>
+	}
+}

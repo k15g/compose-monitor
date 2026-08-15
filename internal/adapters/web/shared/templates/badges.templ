@@ -1,0 +1,17 @@
+package templates
+
+import (
+	"github.com/k15g/compose-monitor/internal/adapters/web/shared/icons"
+)
+
+// Badge is a small labelled fact, with a mark saying what kind of fact it is.
+//
+// The mark is inlined rather than linked so it takes the badge's own colour —
+// a health badge's mark is green or red with it, without the icon having to
+// know anything about health.
+templ Badge(class string, icon icons.Name, text string, title string) {
+	<span class={ "badge", class } title={ title }>
+		@icons.SVG(icon)
+		<span>{ text }</span>
+	</span>
+}

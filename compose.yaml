@@ -1,0 +1,51 @@
+# An example of running the monitor. It is not this repo's own deployment:
+# the project it watches is named by PROJECT_NAME, so the same image serves
+# whichever compose project you point it at.
+name: compose-monitor
+
+services:
+  compose-monitor:
+    image: ghcr.io/k15g/compose-monitor:latest
+    # To run your own changes instead, comment out the image above:
+    #build: .
+    restart: unless-stopped
+
+    environment:
+      # Required. The `name:` of the compose project to watch.
+      PROJECT_NAME: ${PROJECT_NAME:?set PROJECT_NAME — the compose project to watch}
+      PROJECT_TITLE: ${PROJECT_TITLE:-}
+
+      # The start, stop and remove buttons. Off by default: the page has no
+      # authentication, so turning them on says that anyone who can reach it is
+      # allowed to stop and remove containers.
+      CONTROL_ENABLED: ${CONTROL_ENABLED:-false}
+
+    volumes:
+      # Read-only. The service only lists containers and reads the event
+      # stream, and never writes.
+      #
+      # Worth being clear about what :ro buys: the Engine API has no read-only
+      # mode, so the flag stops the file being written, not the API being used.
+      # Anything that can reach this socket can start a container. It limits
+      # accidents, not an attacker — the socket-proxy stanza at the bottom of
+      # this file is the fix if the difference matters here.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    # The image runs as nonroot, and the socket is mode 660. Without a
+    # supplementary group that matches its owning group, connecting to it fails
+    # with "permission denied" and the service exits at startup.
+    #
+    # The GID to use is the one the *container* sees, which is not always the
+    # one the host reports — on Docker Desktop the socket inside a container is
+    # usually root:root, so the answer there is 0, and there is no docker group
+    # to look up. Ask the container:
+    #
+    #   docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro \
+    #     alpine stat -c '%u:%g %a' /var/run/docker.sock
+    #
+    # The second number is DOCKER_GID.
+    group_add:
+      - ${DOCKER_GID:?set DOCKER_GID — see the comment above for how to find it}
+
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
